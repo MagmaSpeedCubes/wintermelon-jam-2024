@@ -11,6 +11,8 @@ let commandQueued = false
 //const colors2 = ["#000000","#00AA", "#0000AA", "#AA9900", "#AAAA00", "#00AA00", "#AA00AA", "#AA0000"];
 const colors1 = ["#FF0000","#CC0000","#990000","#660000","#330000","#000033","#000066","#000099","#0000CC","#0000FF"]
 //const colors2 = ["#FF00FF","#CC0000","#990000","#660000","#330000","#000033","#000066","#000099","#0000CC","#0000FF"]
+
+
 const PIECES = 
     ["I", [
     [0, 0, 0, 0],
@@ -99,7 +101,7 @@ let gameData = ["level", 1, "holdLock", false, "score", 0, "b2b", 0, "combo", 0,
 let gameStats = ["lines", 0];
 let queue = ["Hold", "","holdArray", [], 1, "", 2, "", 3, "", 4, "", 5, "", 6, "" ];
 let currentBag = generateBag(BAG);
-
+let spawnQueue = 0;
 const MAIN_THEME = new Audio("./SFX/music-standard.wav");
 MAIN_THEME.loop = true;
 MAIN_THEME.volume = 1; 
@@ -119,7 +121,10 @@ function generateBag(bag){
 }
 function drawBoard(cx, cy, dpl){
     drawPiece()
-  
+    if (spawnQueue>0){
+        spawnQueue-=1
+        spawnNextPiece()
+    }
     for(let w=0; w<10; w++){
         for(let h=0; h<4; h++){
             if (board[h][w]!=0){
@@ -130,6 +135,9 @@ function drawBoard(cx, cy, dpl){
                 let color1 = "#FFFFFF"
                 let color2 = "#FFFFFF"
                 drawTile(cx+w*TILE_SIZE, cy+h*TILE_SIZE+dpl*(w-4.5), color1, color2);
+            }
+            if (board[h][w]>1){
+                endGame("Topped Out")
             }
         }
         for(let h=4; h<24; h++){
@@ -142,11 +150,15 @@ function drawBoard(cx, cy, dpl){
                 let color2 = "#000000"
                 drawTile(cx+w*TILE_SIZE, cy+h*TILE_SIZE+dpl*(w-4.5), color1, color2);
             }
+            if (board[h][w]>1){
+                endGame("Topped Out");
+            }
         }
         let color1 = "#FFFFFF"
         let color2 = "#FFFFFF"
         drawTile(cx+w*TILE_SIZE, cy+24*TILE_SIZE+dpl*(w-4.5), color1, color2);
     }
+    drawGhostPiece(cx, cy, dpl)
     drawUI()
 }
 function drawTile(cx, cy, color1, color2, angle){
@@ -155,12 +167,20 @@ function drawTile(cx, cy, color1, color2, angle){
     ctx.strokeStyle = color2;
     ctx.strokeRect(cx+TILE_SIZE/4, cy+TILE_SIZE/4, TILE_SIZE/2, TILE_SIZE/2);  
 }
+
 function spawnNextPiece(){
     drawPiece()
     clearLines()
 
     pieceData[pieceData.indexOf("piece") + 1] = queue[queue.indexOf(1)+1];
-    pieceData[pieceData.indexOf("pieceArray") + 1] = PIECES[PIECES.indexOf(pieceData[pieceData.indexOf("piece") + 1])+1]
+    if(pieceData[pieceData.indexOf("piece") + 1]!=""){ 
+        pieceData[pieceData.indexOf("pieceArray") + 1] = PIECES[PIECES.indexOf(pieceData[pieceData.indexOf("piece") + 1])+1].map(row => [...row])
+        if(pieceData[pieceData.indexOf("movements") + 1]==[]){
+            endGame("Topped Out");
+        }
+    }
+        
+   
     pieceData[pieceData.indexOf("x") + 1] = 3;
     pieceData[pieceData.indexOf("y") + 1] = 0;
     pieceData[pieceData.indexOf("oldx") + 1] = 3;
@@ -188,7 +208,7 @@ function drawPiece(){
     for(let x=0; x<pieceSize; x++){
         for(let y=0; y<pieceSize; y++){
             if (pieceData[pieceData.indexOf("pieceArray") + 1][y][x]!=0){
-                board[pieceData[pieceData.indexOf("oldy") + 1]+y][pieceData[pieceData.indexOf("oldx") + 1]+x] = 0;
+                board[pieceData[pieceData.indexOf("oldy") + 1]+y][pieceData[pieceData.indexOf("oldx") + 1]+x] =0;
             }
         }
     }
@@ -199,7 +219,7 @@ function drawPiece(){
     for(let x=0; x<pieceSize; x++){
         for(let y=0; y<pieceSize; y++){
             if (pieceData[pieceData.indexOf("pieceArray") + 1][y][x]!=0){
-                board[pieceData[pieceData.indexOf("y") + 1]+y][pieceData[pieceData.indexOf("x") + 1]+x] = 1;
+                board[pieceData[pieceData.indexOf("y") + 1]+y][pieceData[pieceData.indexOf("x") + 1]+x] += 1;
             }
         }
     }
@@ -207,7 +227,7 @@ function drawPiece(){
 
 }
 function gravity(){
-    MAIN_THEME.play();
+    
     let canMove = true;
     let tempBoard = board.map(row => [...row]);
     let tilt = calculateTilt();
@@ -240,7 +260,7 @@ function gravity(){
         pieceData[pieceData.indexOf("y") + 1] +=1
         pieceData[pieceData.indexOf("movements") + 1].push("g");
     }else{
-        spawnNextPiece();
+        spawnQueue+=1
     }
 }
 function softDrop(){
@@ -277,17 +297,95 @@ function softDrop(){
     }
 }
 function firmDrop(){
-    for(let i=0; i<25; i++){
-        softDrop();
+    let canMove = true;
+    while(canMove==true){
+        let tempBoard = board.map(row => [...row]);
+
+        let pieceSize = pieceData[pieceData.indexOf("pieceArray") + 1].length;
+        for(let x=0; x<pieceSize; x++){
+            for(let y=0; y<pieceSize; y++){
+                if (pieceData[pieceData.indexOf("pieceArray") + 1][y][x]!=0){
+                    tempBoard[pieceData[pieceData.indexOf("oldy") + 1]+y][pieceData[pieceData.indexOf("oldx") + 1]+x] = 0;
+                }
+            }
+        }
+        let testy = pieceData[pieceData.indexOf("y") + 1] + 1
+        
+        for(let x=0; x<pieceSize; x++){
+            for(let y=0; y<pieceSize; y++){
+                if (pieceData[pieceData.indexOf("pieceArray") + 1][y][x]!=0){
+                    tempBoard[testy+y][pieceData[pieceData.indexOf("x") + 1]+x] += 1;
+                }
+            }
+        }
+        for(let w=0; w<10; w++){
+            for(let h=0; h<25; h++){
+                if (tempBoard[h][w] > 1){
+                    canMove = false;
+                }
+            }
+        }
+
+        if (canMove){
+            pieceData[pieceData.indexOf("y") + 1] +=1
+        }
     }
     pieceData[pieceData.indexOf("movements") + 1].push("fd");
+    
 }
 function hardDrop(){
-    for(let i=0; i<25; i++){
-        softDrop();
-    }
+    firmDrop();
     pieceData[pieceData.indexOf("movements") + 1].push("hd");
-    setTimeout(spawnNextPiece, 20)
+    spawnQueue+=1
+}
+function getLowestMovementPoint(){
+    let canMove = true;
+    let testy = pieceData[pieceData.indexOf("y") + 1] 
+    while(canMove==true){
+        let tempBoard = board.map(row => [...row]);
+
+        let pieceSize = pieceData[pieceData.indexOf("pieceArray") + 1].length;
+        for(let x=0; x<pieceSize; x++){
+            for(let y=0; y<pieceSize; y++){
+                if (pieceData[pieceData.indexOf("pieceArray") + 1][y][x]!=0){
+                    tempBoard[pieceData[pieceData.indexOf("oldy") + 1]+y][pieceData[pieceData.indexOf("oldx") + 1]+x] = 0;
+                }
+            }
+        }
+        testy+=1
+        
+        for(let x=0; x<pieceSize; x++){
+            for(let y=0; y<pieceSize; y++){
+                if (pieceData[pieceData.indexOf("pieceArray") + 1][y][x]!=0){
+                    tempBoard[testy+y][pieceData[pieceData.indexOf("x") + 1]+x] += 1;
+                }
+            }
+        }
+        for(let w=0; w<10; w++){
+            for(let h=0; h<25; h++){
+                if (tempBoard[h][w] > 1){
+                    canMove = false;
+                }
+            }
+        }
+    }
+    return testy
+    
+    
+}
+function drawGhostPiece(cx, cy, dpl){
+    let pieceSize = pieceData[pieceData.indexOf("pieceArray") + 1].length
+    for(let x=0; x<pieceSize; x++){
+        for(let y=0; y<pieceSize; y++){
+            if (pieceData[pieceData.indexOf("pieceArray") + 1][y][x]!=0){
+                let w = pieceData[pieceData.indexOf("x") + 1] + x
+                let h = getLowestMovementPoint() + y - 1
+                drawTile(cx+w*TILE_SIZE, cy+h*TILE_SIZE+dpl*(w-4.5), "#999999", "#FFFFFF")
+            }
+        }
+    }
+    //updates piece information
+    //draws new piece
 }
 function movePieceLeft(){
     let canMove = true;
@@ -554,6 +652,8 @@ function rotatePieceCW(){
         }
         //draws new piece
         pieceData[pieceData.indexOf("movements") + 1].push("rcw");
+        console.log(pieceData[pieceData.indexOf("piece") + 1])
+        console.log(pieceData[pieceData.indexOf("pieceArray") + 1])
     }
 }
 function rotatePieceCCW(){
@@ -726,7 +826,7 @@ function holdPiece(){
         queue[queue.indexOf("holdArray")+1] = tempPieceArray.map(row => [...row]);
 
         if (pieceData[pieceData.indexOf("pieceArray") + 1].length==0){
-            spawnNextPiece()
+            spawnQueue+=1
         }
     }
 }
@@ -769,7 +869,7 @@ function clearLines(){
         if(clearedLines==1){
             if(score==100){
                 gameData[gameData.indexOf("b2b") + 1] = 0;
-                gameStats[gameData.indexOf("lines") + 1] +=1;
+                gameStats[gameStats.indexOf("lines") + 1] +=1;
             }
             lineClear += "Single"
             const LC = new Audio("./SFX/lineclear.wav");
@@ -778,7 +878,7 @@ function clearLines(){
         }else if(clearedLines==2){
             if(score==100){
                 gameData[gameData.indexOf("b2b") + 1] = 0;
-                gameStats[gameData.indexOf("lines") + 1] +=2;
+                gameStats[gameStats.indexOf("lines") + 1] +=2;
             }
             score*=2
             lineClear += "Double"
@@ -788,7 +888,7 @@ function clearLines(){
         }else if(clearedLines==3){
             if(score==100){
                 gameData[gameData.indexOf("b2b") + 1] = 0;
-                gameStats[gameData.indexOf("lines") + 1] +=3;
+                gameStats[gameStats.indexOf("lines") + 1] +=3;
             }
             score*=4
             lineClear += "Triple"
@@ -797,7 +897,7 @@ function clearLines(){
             LCQ.play()
         }else if(clearedLines==4){
             gameData[gameData.indexOf("b2b") + 1] +=1
-            gameStats[gameData.indexOf("lines") + 1] +=4;
+            gameStats[gameStats.indexOf("lines") + 1] +=4;
             score*=8
             lineClear += "Tetris"
             const LCQ = new Audio("./SFX/lineclear-tetris.wav");
@@ -805,7 +905,7 @@ function clearLines(){
             LCQ.play()
         }else if(clearedLines==5){
             gameData[gameData.indexOf("b2b") + 1] +=1
-            gameStats[gameData.indexOf("lines") + 1] +=5;
+            gameStats[gameStats.indexOf("lines") + 1] +=5;
             score*=8
             lineClear += "PENTRIS"
             const LCP = new Audio("./SFX/lineclear-tetris.wav");
@@ -817,7 +917,7 @@ function clearLines(){
             lineClear += " "+gameData[gameData.indexOf("combo") + 1]+" Combo "
             let comboSound = gameData[gameData.indexOf("combo") + 1]
             if (comboSound>16){comboSound=16}
-            const COMBO = new Audio("./SFX/combo-"+comboSound+".wav");
+            let COMBO = new Audio("./SFX/combo-"+comboSound+".wav");
             COMBO.volume = 1; 
             COMBO.play()
         }
@@ -835,16 +935,16 @@ function clearLines(){
             LC.volume = 1; 
             LC.play()
         }
-        console.log(lineClear);
+        //console.log(lineClear);
         gameData[gameData.indexOf("score") + 1] += score
-        console.log(score);
+        //console.log(score);
 
         gameData[gameData.indexOf("combo") + 1] +=1;
-        console.log("combo set to "+gameData[gameData.indexOf("combo") + 1]+"")
+        //console.log("combo set to "+gameData[gameData.indexOf("combo") + 1]+"")
     }else{
         gameData[gameData.indexOf("b2b") + 1] = 0;
         gameData[gameData.indexOf("combo") + 1] = 0;
-        console.log("combo set to "+gameData[gameData.indexOf("combo") + 1]+"")
+        //console.log("combo set to "+gameData[gameData.indexOf("combo") + 1]+"")
     }
     
 }
@@ -882,17 +982,84 @@ function drawUI(){
         
     }
 }
-function endGame(){
+function endGame(reason){
+    stop(gravity);
+    stop(everyTwoSeconds);
+    console.log(reason)
+}
+function playWarnings(){
+    let highestOccupied = 0;
+    for(let i=24; i>=0; i--){
+        let rowSum = 0;
+        for(let j=0; j<10; j++){
+            if(board[i][j]!=0){
+                rowSum+=1
+            }
+        }
+        if(rowSum>4){
+            highestOccupied = i;
+        }
+
+    }
+    const W1 = new Audio("./SFX/warning-1.wav");
+    const W2 = new Audio("./SFX/warning-2.wav");
+    const W3 = new Audio("./SFX/warning-3.wav");
+    const W4 = new Audio("./SFX/warning-4.wav");
+    if (Math.abs(gameData[gameData.indexOf("tilt") + 1]) >=1/2*TILE_SIZE){
+        endGame("Tipped Over")
+    }
+    //console.log("Highest occupied:"+highestOccupied+", tilt:"+gameData[gameData.indexOf("tilt") + 1])
+    if(highestOccupied<3||Math.abs(gameData[gameData.indexOf("tilt") + 1]) >3/8*TILE_SIZE){ 
+        
+        W4.pause()
+        W3.pause()
+        W2.pause()
+        W1.pause()
+        W4.play()
+    }else if(highestOccupied<5||Math.abs(gameData[gameData.indexOf("tilt") + 1]) >2/8*TILE_SIZE){
+        W4.pause()
+        W3.pause()
+        W2.pause()
+        W1.pause()
+        W3.play()
+    }else if(highestOccupied<7||Math.abs(gameData[gameData.indexOf("tilt") + 1]) >1/8*TILE_SIZE){
+        W4.pause()
+        W3.pause()
+        W2.pause()
+        W1.pause()
+        W2.play()
+    }else if(highestOccupied<9||Math.abs(gameData[gameData.indexOf("tilt") + 1]) >1/16*TILE_SIZE){
+        W4.pause()
+        W3.pause()
+        W2.pause()
+        W1.pause()
+        W1.play()
+    }
+}
+
+function everyTwoSeconds(){
+    //console.log(gameData[gameData.indexOf("level") + 1])
+    //console.log(Math.floor(gameStats[gameStats.indexOf("lines") + 1]/10)+1)
+    if ( gameData[gameData.indexOf("level") + 1] != Math.floor(gameStats[gameStats.indexOf("lines") + 1]/10)+1){
+
+        gameData[gameData.indexOf("level") + 1] = Math.floor(gameStats[gameStats.indexOf("lines") + 1]/10)+1
+        stop(gravity)
+        console.log(gameData[gameData.indexOf("level") + 1])
+        setInterval(gravity, 1000/Math.log(gameData[gameData.indexOf("level") + 1]+1))
+    }
+
+    MAIN_THEME.play();
+    playWarnings();
 
 }
+
 /*THIS IS ALL CODE THAT IS PART OF THE GAME*/
 function start(){
         
-    for(let i=0; i<7; i++){
-        spawnNextPiece()
-    }
+    spawnQueue+=7
     setInterval( function() { drawBoard(234,0,gameData[gameData.indexOf("tilt") + 1]); }, 10 );
     setInterval(gravity, 1000);
+    setInterval(everyTwoSeconds, 2000);
     window.addEventListener("keydown", function (event) {
   
         switch (event.key) {
