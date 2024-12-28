@@ -11,7 +11,9 @@ let commandQueued = false
 //const colors2 = ["#000000","#00AA", "#0000AA", "#AA9900", "#AAAA00", "#00AA00", "#AA00AA", "#AA0000"];
 const colors1 = ["#FF0000","#CC0000","#990000","#660000","#330000","#000033","#000066","#000099","#0000CC","#0000FF"]
 //const colors2 = ["#FF00FF","#CC0000","#990000","#660000","#330000","#000033","#000066","#000099","#0000CC","#0000FF"]
-
+let timer1
+let timer2
+let timer3
 
 const PIECES = 
     ["I", [
@@ -97,7 +99,7 @@ let board =
     [1,1,1,1,1,1,1,1,1,1]
     ];
 let pieceData = ["piece","","pieceArray", [], "x", 0, "y", 0, "oldx", 0, "oldy", 0, "movements", [], "rotation", 0];
-let gameData = ["level", 1, "holdLock", false, "score", 0, "b2b", 0, "combo", 0, "actionText","eee", "tilt", 0 , "mode", 0];
+let gameData = ["level", 1, "holdLock", false, "score", 0, "b2b", 0, "combo", 0, "actionText","", "tilt", 0 , "mode", 0, "tiltSpeed", 0];
 let gameStats = ["lines", 0];
 let queue = ["Hold", "","holdArray", [], 1, "", 2, "", 3, "", 4, "", 5, "", 6, "" ];
 let currentBag = generateBag(BAG);
@@ -106,6 +108,11 @@ const MAIN_THEME = new Audio("./SFX/music-standard.wav");
 MAIN_THEME.loop = true;
 MAIN_THEME.volume = 1; 
 
+let mods = ["No Ghost Piece", "No Hold", "Gravity", "No Next Queue", "Total Mayhem", "Pentominoes"];
+let modFlavorTexts = ["Ghost piece is disabled", "Holding is disabled", "Gravity increases sharply by level", "Cannoy see your next pieces", "Fully random piece generation", "Occasionally recive pentomino pieces"]
+let modTriggers = ["q", "w", "e", "r", "t", "y"];
+let bg = new Image();
+bg.src = "./GFX/bg.png"
 
 function generateBag(bag){
     let rpt = bag.length
@@ -120,10 +127,15 @@ function generateBag(bag){
     return randomBag;
 }
 function drawBoard(cx, cy, dpl){
+    // updatePieceX()
+    // updatePieceY()
     drawPiece()
     if (spawnQueue>0){
         spawnQueue-=1
-        spawnNextPiece()
+        spawnNextPiece();
+    }
+    bg.onload = function(){
+        ctx.drawImage(bg, 0, 0);
     }
     for(let w=0; w<10; w++){
         for(let h=0; h<4; h++){
@@ -132,8 +144,8 @@ function drawBoard(cx, cy, dpl){
                 let color2 = "#FFFFFF"
                 drawTile(cx+w*TILE_SIZE, cy+h*TILE_SIZE+dpl*(w-4.5), color1, color2);
             }else{
-                let color1 = "#FFFFFF"
-                let color2 = "#FFFFFF"
+                let color1 = "#2F1254"
+                let color2 = "#2F1254"
                 drawTile(cx+w*TILE_SIZE, cy+h*TILE_SIZE+dpl*(w-4.5), color1, color2);
             }
             if (board[h][w]>1){
@@ -154,12 +166,16 @@ function drawBoard(cx, cy, dpl){
                 endGame("Topped Out");
             }
         }
-        let color1 = "#FFFFFF"
-        let color2 = "#FFFFFF"
-        drawTile(cx+w*TILE_SIZE, cy+24*TILE_SIZE+dpl*(w-4.5), color1, color2);
+        let color1 = "#2F1254"
+        let color2 = "#2F1254"
+        for(let h=24; h<26; h++){
+            drawTile(cx+w*TILE_SIZE, cy+h*TILE_SIZE+dpl*(w-4.5), color1, color2);
+        }
+        
     }
     drawGhostPiece(cx, cy, dpl)
     drawUI()
+    
 }
 function drawTile(cx, cy, color1, color2, angle){
     ctx.fillStyle = color1;
@@ -167,7 +183,12 @@ function drawTile(cx, cy, color1, color2, angle){
     ctx.strokeStyle = color2;
     ctx.strokeRect(cx+TILE_SIZE/4, cy+TILE_SIZE/4, TILE_SIZE/2, TILE_SIZE/2);  
 }
-
+function drawHalfTile(cx, cy, color1, color2, angle){
+    ctx.fillStyle = color1;
+    ctx.fillRect(cx, cy, TILE_SIZE/2, TILE_SIZE/2);  
+    ctx.strokeStyle = color2;
+    ctx.strokeRect(cx+TILE_SIZE/8, cy+TILE_SIZE/8, TILE_SIZE/4, TILE_SIZE/4);  
+}
 function spawnNextPiece(){
     drawPiece()
     clearLines()
@@ -205,6 +226,7 @@ function spawnNextPiece(){
 }
 function drawPiece(){
     let pieceSize = pieceData[pieceData.indexOf("pieceArray") + 1].length
+    
     for(let x=0; x<pieceSize; x++){
         for(let y=0; y<pieceSize; y++){
             if (pieceData[pieceData.indexOf("pieceArray") + 1][y][x]!=0){
@@ -226,12 +248,57 @@ function drawPiece(){
     //draws new piece
 
 }
+// function updatePieceX(){
+//     let pieceSize = pieceData[pieceData.indexOf("pieceArray") + 1].length
+    
+//     for(let x=0; x<pieceSize; x++){
+//         for(let y=0; y<pieceSize; y++){
+//             if (pieceData[pieceData.indexOf("pieceArray") + 1][y][x]!=0){
+//                 board[pieceData[pieceData.indexOf("oldy") + 1]+y][pieceData[pieceData.indexOf("oldx") + 1]+x] =0;
+//             }
+//         }
+//     }
+//     //erases old piece
+//     pieceData[pieceData.indexOf("oldx") + 1] = pieceData[pieceData.indexOf("x") + 1]
+//     //updates piece information
+//     for(let x=0; x<pieceSize; x++){
+//         for(let y=0; y<pieceSize; y++){
+//             if (pieceData[pieceData.indexOf("pieceArray") + 1][y][x]!=0){
+//                 board[pieceData[pieceData.indexOf("y") + 1]+y][pieceData[pieceData.indexOf("x") + 1]+x] += 1;
+//             }
+//         }
+//     }
+//     //draws new piece
+// }
+// function updatePieceY(){
+//     let pieceSize = pieceData[pieceData.indexOf("pieceArray") + 1].length
+    
+//     for(let x=0; x<pieceSize; x++){
+//         for(let y=0; y<pieceSize; y++){
+//             if (pieceData[pieceData.indexOf("pieceArray") + 1][y][x]!=0){
+//                 board[pieceData[pieceData.indexOf("oldy") + 1]+y][pieceData[pieceData.indexOf("oldx") + 1]+x] =0;
+//             }
+//         }
+//     }
+//     //erases old piece
+//     pieceData[pieceData.indexOf("oldy") + 1] = pieceData[pieceData.indexOf("y") + 1]
+//     //updates piece information
+//     for(let x=0; x<pieceSize; x++){
+//         for(let y=0; y<pieceSize; y++){
+//             if (pieceData[pieceData.indexOf("pieceArray") + 1][y][x]!=0){
+//                 board[pieceData[pieceData.indexOf("y") + 1]+y][pieceData[pieceData.indexOf("x") + 1]+x] += 1;
+//             }
+//         }
+//     }
+//     //draws new piece
+// }
 function gravity(){
     
     let canMove = true;
     let tempBoard = board.map(row => [...row]);
     let tilt = calculateTilt();
     gameData[gameData.indexOf("tilt") + 1] +=tilt/100
+    gameData[gameData.indexOf("tiltSpeed") + 1] =tilt
     let pieceSize = pieceData[pieceData.indexOf("pieceArray") + 1].length;
     for(let x=0; x<pieceSize; x++){
         for(let y=0; y<pieceSize; y++){
@@ -294,6 +361,8 @@ function softDrop(){
     if (canMove){
         pieceData[pieceData.indexOf("y") + 1] +=1
         pieceData[pieceData.indexOf("movements") + 1].push("sd");
+        gameData[gameData.indexOf("score") + 1]+=1;
+        
     }
 }
 function firmDrop(){
@@ -328,8 +397,10 @@ function firmDrop(){
 
         if (canMove){
             pieceData[pieceData.indexOf("y") + 1] +=1
+            gameData[gameData.indexOf("score") + 1]+=2;
         }
     }
+    
     pieceData[pieceData.indexOf("movements") + 1].push("fd");
     
 }
@@ -652,8 +723,8 @@ function rotatePieceCW(){
         }
         //draws new piece
         pieceData[pieceData.indexOf("movements") + 1].push("rcw");
-        console.log(pieceData[pieceData.indexOf("piece") + 1])
-        console.log(pieceData[pieceData.indexOf("pieceArray") + 1])
+        //console.log(pieceData[pieceData.indexOf("piece") + 1])
+        //console.log(pieceData[pieceData.indexOf("pieceArray") + 1])
     }
 }
 function rotatePieceCCW(){
@@ -824,7 +895,13 @@ function holdPiece(){
         pieceData[pieceData.indexOf("piece") + 1] = queue[queue.indexOf("Hold")+1]
         queue[queue.indexOf("Hold")+1] = tempPiece
         queue[queue.indexOf("holdArray")+1] = tempPieceArray.map(row => [...row]);
-
+        pieceData[pieceData.indexOf("x") + 1] = 3;
+        pieceData[pieceData.indexOf("y") + 1] = 0;
+        pieceData[pieceData.indexOf("oldx") + 1] = 3;
+        pieceData[pieceData.indexOf("oldy") + 1] = 0;
+        pieceData[pieceData.indexOf("movements") + 1] = [];
+        pieceData[pieceData.indexOf("rotation") + 1] = 0
+        
         if (pieceData[pieceData.indexOf("pieceArray") + 1].length==0){
             spawnQueue+=1
         }
@@ -913,7 +990,8 @@ function clearLines(){
             LCP.play()
         }
         if (gameData[gameData.indexOf("combo") + 1] >0){
-            score *= Math.floor(Math.pow(1.25, gameData[gameData.indexOf("combo") + 1]))
+            score *= Math.pow(1.25, gameData[gameData.indexOf("combo") + 1])
+            score = Math.floor(score);
             lineClear += " "+gameData[gameData.indexOf("combo") + 1]+" Combo "
             let comboSound = gameData[gameData.indexOf("combo") + 1]
             if (comboSound>16){comboSound=16}
@@ -938,7 +1016,7 @@ function clearLines(){
         //console.log(lineClear);
         gameData[gameData.indexOf("score") + 1] += score
         //console.log(score);
-
+        gameData[gameData.indexOf("actionText") + 1] = lineClear;
         gameData[gameData.indexOf("combo") + 1] +=1;
         //console.log("combo set to "+gameData[gameData.indexOf("combo") + 1]+"")
     }else{
@@ -974,18 +1052,59 @@ function calculateTilt(){
 function drawUI(){
     ctx.fillStyle = "#2F1254";
     ctx.fillRect(768, 0, 256, 1024);
-
-    ctx.font = "50px Arial";
+    ctx.fillStyle = "#FF9900";
+    ctx.font = "30px Arial";
     ctx.textBaseline = "middle";
-    ctx.fillText(gameData[gameData.indexOf("actionText") + 1],768,50);
-    for(let i=0; i<6; i++){
-        
+    ctx.fillText(gameData[gameData.indexOf("actionText") + 1],234,50);
+    //general text and info
+    let pieceSize = queue[queue.indexOf("holdArray") + 1].length
+    let cx = 818
+    let cy = 100
+    ctx.font = "30px Arial";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Hold",818,70);
+    ctx.fillText("Next",818,190);
+    ctx.fillText("Level",900,70);
+    ctx.fillText(gameData[gameData.indexOf("level") + 1],900,100);
+    ctx.fillText("Score",900,190);
+    ctx.fillText(gameData[gameData.indexOf("score") + 1],900,220);
+    for(let x=0; x<pieceSize; x++){
+        for(let y=0; y<pieceSize; y++){
+            if (queue[queue.indexOf("holdArray") + 1][y][x]!=0){
+                drawHalfTile(cx+x*TILE_SIZE/2, cy+y*TILE_SIZE/2, "#999999", "#FFFFFF")
+
+            }
+        }
     }
+    let tiltSpeed = gameData[gameData.indexOf("tiltSpeed") + 1]
+    if (tiltSpeed>=0){ctx.fillStyle = "#0000FF"}
+    else{ctx.fillStyle = "#FF0000"}
+    ctx.font = "25px Arial";
+    ctx.fillText("Tilt Speed",900,310);
+    ctx.fillText(""+tiltSpeed+"",900,340);
+    
+
+    cy+=60
+    for(let i=0; i<6; i++){
+        cy+=60
+        pieceSize = PIECES[PIECES.indexOf(queue[queue.indexOf(i+1) + 1])+1].length
+        for(let x=0; x<pieceSize; x++){
+            for(let y=0; y<pieceSize; y++){
+                if (PIECES[PIECES.indexOf(queue[queue.indexOf(i+1) + 1])+1][y][x]!=0){
+                    drawHalfTile(cx+x*TILE_SIZE/2, cy+y*TILE_SIZE/2, "#999999", "#FFFFFF")
+    
+                }
+            }
+        }
+    }
+    
 }
 function endGame(reason){
-    stop(gravity);
-    stop(everyTwoSeconds);
+    clearInterval(timer1);
+    clearInterval(timer2);
+    clearInterval(timer3)
     console.log(reason)
+    MAIN_THEME.pause()
 }
 function playWarnings(){
     let highestOccupied = 0;
@@ -1009,45 +1128,38 @@ function playWarnings(){
         endGame("Tipped Over")
     }
     //console.log("Highest occupied:"+highestOccupied+", tilt:"+gameData[gameData.indexOf("tilt") + 1])
-    if(highestOccupied<3||Math.abs(gameData[gameData.indexOf("tilt") + 1]) >3/8*TILE_SIZE){ 
-        
+    if(highestOccupied<5||Math.abs(gameData[gameData.indexOf("tilt") + 1]) >2/8*TILE_SIZE){
         W4.pause()
         W3.pause()
         W2.pause()
         W1.pause()
         W4.play()
-    }else if(highestOccupied<5||Math.abs(gameData[gameData.indexOf("tilt") + 1]) >2/8*TILE_SIZE){
-        W4.pause()
-        W3.pause()
-        W2.pause()
-        W1.pause()
-        W3.play()
-    }else if(highestOccupied<7||Math.abs(gameData[gameData.indexOf("tilt") + 1]) >1/8*TILE_SIZE){
-        W4.pause()
-        W3.pause()
-        W2.pause()
-        W1.pause()
-        W2.play()
+        gameData[gameData.indexOf("actionText") + 1] = "Warning!"
     }else if(highestOccupied<9||Math.abs(gameData[gameData.indexOf("tilt") + 1]) >1/16*TILE_SIZE){
         W4.pause()
         W3.pause()
         W2.pause()
         W1.pause()
-        W1.play()
+        W2.play()
+        gameData[gameData.indexOf("actionText") + 1] = "Caution!"
     }
 }
-
-function everyTwoSeconds(){
+function everyFourSeconds(){
     //console.log(gameData[gameData.indexOf("level") + 1])
     //console.log(Math.floor(gameStats[gameStats.indexOf("lines") + 1]/10)+1)
+    gameData[gameData.indexOf("actionText") + 1] = ""
     if ( gameData[gameData.indexOf("level") + 1] != Math.floor(gameStats[gameStats.indexOf("lines") + 1]/10)+1){
 
         gameData[gameData.indexOf("level") + 1] = Math.floor(gameStats[gameStats.indexOf("lines") + 1]/10)+1
-        stop(gravity)
+        clearInterval(timer2)
         console.log(gameData[gameData.indexOf("level") + 1])
-        setInterval(gravity, 1000/Math.log(gameData[gameData.indexOf("level") + 1]+1))
+        console.log(1000/Math.log(gameData[gameData.indexOf("level") + 1]+1))
+        timer2 = setInterval(gravity, 1000/Math.log(gameData[gameData.indexOf("level") + 1]+1))
+        gameData[gameData.indexOf("actionText") + 1] = "Level Up!"
+        const LU = new Audio("./SFX/levelup.wav");
+        LU.play()
     }
-
+    
     MAIN_THEME.play();
     playWarnings();
 
@@ -1057,9 +1169,9 @@ function everyTwoSeconds(){
 function start(){
         
     spawnQueue+=7
-    setInterval( function() { drawBoard(234,0,gameData[gameData.indexOf("tilt") + 1]); }, 10 );
-    setInterval(gravity, 1000);
-    setInterval(everyTwoSeconds, 2000);
+    timer1 = setInterval( function() { drawBoard(234,0,gameData[gameData.indexOf("tilt") + 1]); }, 10 );
+    timer2 = setInterval(gravity, 1000);
+    timer3 = setInterval(everyFourSeconds, 4000);
     window.addEventListener("keydown", function (event) {
   
         switch (event.key) {
