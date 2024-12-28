@@ -1,3 +1,6 @@
+/*
+BALANCE STACK
+*/
 /*THIS IS ALL SETUP CODE*/
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
@@ -92,25 +95,16 @@ let board =
     [1,1,1,1,1,1,1,1,1,1]
     ];
 let pieceData = ["piece","","pieceArray", [], "x", 0, "y", 0, "oldx", 0, "oldy", 0, "movements", [], "rotation", 0];
-let gameData = ["level", 1, "holdLock", false, "score", 0, "b2b", 0, "combo", 0, "actionText","eee", "tilt", 0 ];
+let gameData = ["level", 1, "holdLock", false, "score", 0, "b2b", 0, "combo", 0, "actionText","eee", "tilt", 0 , "mode", 0];
+let gameStats = ["lines", 0];
 let queue = ["Hold", "","holdArray", [], 1, "", 2, "", 3, "", 4, "", 5, "", 6, "" ];
 let currentBag = generateBag(BAG);
-const MAIN_THEME = new sound("./SFX/music-standard.wav");
+
+const MAIN_THEME = new Audio("./SFX/music-standard.wav");
 MAIN_THEME.loop = true;
-function sound(src) {
-    this.sound = document.createElement("audio");
-    this.sound.src = src;
-    this.sound.setAttribute("preload", "auto");
-    this.sound.setAttribute("controls", "none");
-    this.sound.style.display = "none";
-    document.body.appendChild(this.sound);
-    this.play = function(){
-      this.sound.play();
-    }
-    this.stop = function(){
-      this.sound.pause();
-    }
-  }
+MAIN_THEME.volume = 1; 
+
+
 function generateBag(bag){
     let rpt = bag.length
     let localBag = bag;
@@ -125,7 +119,6 @@ function generateBag(bag){
 }
 function drawBoard(cx, cy, dpl){
     drawPiece()
-    clearLines()
   
     for(let w=0; w<10; w++){
         for(let h=0; h<4; h++){
@@ -150,6 +143,9 @@ function drawBoard(cx, cy, dpl){
                 drawTile(cx+w*TILE_SIZE, cy+h*TILE_SIZE+dpl*(w-4.5), color1, color2);
             }
         }
+        let color1 = "#FFFFFF"
+        let color2 = "#FFFFFF"
+        drawTile(cx+w*TILE_SIZE, cy+24*TILE_SIZE+dpl*(w-4.5), color1, color2);
     }
     drawUI()
 }
@@ -160,6 +156,8 @@ function drawTile(cx, cy, color1, color2, angle){
     ctx.strokeRect(cx+TILE_SIZE/4, cy+TILE_SIZE/4, TILE_SIZE/2, TILE_SIZE/2);  
 }
 function spawnNextPiece(){
+    drawPiece()
+    clearLines()
 
     pieceData[pieceData.indexOf("piece") + 1] = queue[queue.indexOf(1)+1];
     pieceData[pieceData.indexOf("pieceArray") + 1] = PIECES[PIECES.indexOf(pieceData[pieceData.indexOf("piece") + 1])+1]
@@ -209,6 +207,7 @@ function drawPiece(){
 
 }
 function gravity(){
+    MAIN_THEME.play();
     let canMove = true;
     let tempBoard = board.map(row => [...row]);
     let tilt = calculateTilt();
@@ -719,8 +718,8 @@ function holdPiece(){
             }
         }
         gameData[gameData.indexOf("holdLock") + 1] = true;
-        let tempPieceArray = PIECES[PIECES.indexOf(pieceData[pieceData.indexOf("pieceArray") + 1])].map(row => [...row]);
-        let tempPiece = PIECES[PIECES.indexOf(pieceData[pieceData.indexOf("piece") + 1])]
+        let tempPieceArray = pieceData[pieceData.indexOf("pieceArray") + 1].map(row => [...row]);
+        let tempPiece = pieceData[pieceData.indexOf("piece") + 1]
         pieceData[pieceData.indexOf("pieceArray") + 1] = queue[queue.indexOf("holdArray")+1].map(row => [...row]);
         pieceData[pieceData.indexOf("piece") + 1] = queue[queue.indexOf("Hold")+1]
         queue[queue.indexOf("Hold")+1] = tempPiece
@@ -755,39 +754,72 @@ function clearLines(){
     if (clearedLines>0){
         let lineClear = ""
         let score = 100
-        if (pieceData[pieceData.indexOf("pieceArray") + 1].pop == "rcw"||pieceData[pieceData.indexOf("pieceArray") + 1].pop == "rccw"){
+        let lastMove = pieceData[pieceData.indexOf("pieceArray") + 1].pop()
+        if (lastMove == "rcw"||lastMove == "rccw"){
             if(pieceData[pieceData.indexOf("piece") + 1]!="O"){
                 lineClear += pieceData[pieceData.indexOf("piece") + 1]+"-Spin "
                 score*=2
                 score += gameData[gameData.indexOf("b2b") + 1]*100
                 gameData[gameData.indexOf("b2b") + 1] +=1
+                const LCS = new Audio("./SFX/lineclear-spin.wav");
+                LCS.volume = 1; 
+                LCS.play()
             }
         }
         if(clearedLines==1){
             if(score==100){
                 gameData[gameData.indexOf("b2b") + 1] = 0;
+                gameStats[gameData.indexOf("lines") + 1] +=1;
             }
             lineClear += "Single"
+            const LC = new Audio("./SFX/lineclear.wav");
+            LC.volume = 1; 
+            LC.play()
         }else if(clearedLines==2){
             if(score==100){
                 gameData[gameData.indexOf("b2b") + 1] = 0;
+                gameStats[gameData.indexOf("lines") + 1] +=2;
             }
             score*=2
             lineClear += "Double"
+            const LC = new Audio("./SFX/lineclear.wav");
+            LC.volume = 1; 
+            LC.play()
         }else if(clearedLines==3){
             if(score==100){
                 gameData[gameData.indexOf("b2b") + 1] = 0;
+                gameStats[gameData.indexOf("lines") + 1] +=3;
             }
             score*=4
             lineClear += "Triple"
+            const LCQ = new Audio("./SFX/lineclear.wav");
+            LCQ.volume = 1; 
+            LCQ.play()
         }else if(clearedLines==4){
             gameData[gameData.indexOf("b2b") + 1] +=1
+            gameStats[gameData.indexOf("lines") + 1] +=4;
             score*=8
             lineClear += "Tetris"
+            const LCQ = new Audio("./SFX/lineclear-tetris.wav");
+            LCQ.volume = 1; 
+            LCQ.play()
+        }else if(clearedLines==5){
+            gameData[gameData.indexOf("b2b") + 1] +=1
+            gameStats[gameData.indexOf("lines") + 1] +=5;
+            score*=8
+            lineClear += "PENTRIS"
+            const LCP = new Audio("./SFX/lineclear-tetris.wav");
+            LCP.volume = 1; 
+            LCP.play()
         }
         if (gameData[gameData.indexOf("combo") + 1] >0){
-            score += gameData[gameData.indexOf("combo") + 1]*50
+            score *= Math.floor(Math.pow(1.25, gameData[gameData.indexOf("combo") + 1]))
             lineClear += " "+gameData[gameData.indexOf("combo") + 1]+" Combo "
+            let comboSound = gameData[gameData.indexOf("combo") + 1]
+            if (comboSound>16){comboSound=16}
+            const COMBO = new Audio("./SFX/combo-"+comboSound+".wav");
+            COMBO.volume = 1; 
+            COMBO.play()
         }
 
         let Sum = 0;
@@ -799,15 +831,20 @@ function clearLines(){
         if (Sum==0){
             score+=10000;
             lineClear += " Perfect Clear"
+            const LC = new Audio("./SFX/lineclear-pc.wav");
+            LC.volume = 1; 
+            LC.play()
         }
         console.log(lineClear);
         gameData[gameData.indexOf("score") + 1] += score
         console.log(score);
 
         gameData[gameData.indexOf("combo") + 1] +=1;
+        console.log("combo set to "+gameData[gameData.indexOf("combo") + 1]+"")
     }else{
         gameData[gameData.indexOf("b2b") + 1] = 0;
         gameData[gameData.indexOf("combo") + 1] = 0;
+        console.log("combo set to "+gameData[gameData.indexOf("combo") + 1]+"")
     }
     
 }
@@ -845,13 +882,12 @@ function drawUI(){
         
     }
 }
+function endGame(){
 
+}
 /*THIS IS ALL CODE THAT IS PART OF THE GAME*/
-function start(mode){
-    if (mode==1){
-        MAIN_THEME.play();
+function start(){
         
-    }
     for(let i=0; i<7; i++){
         spawnNextPiece()
     }
@@ -860,7 +896,6 @@ function start(mode){
     window.addEventListener("keydown", function (event) {
   
         switch (event.key) {
-    
         case "ArrowDown":
             if (!commandQueued){
                 commandQueued = true;
@@ -928,6 +963,7 @@ function start(mode){
       
         event.preventDefault();
       }, true);
+
 }
 start(0)
 
