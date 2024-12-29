@@ -102,12 +102,25 @@ let pieceData = ["piece","","pieceArray", [], "x", 0, "y", 0, "oldx", 0, "oldy",
 let gameData = ["level", 1, "holdLock", false, "score", 0, "b2b", 0, "combo", 0, "actionText","", "tilt", 0 , "mode", 0, "tiltSpeed", 0
     ,"mods", []
 ];
+let bestGames = ["High Score", 0, "Blindness", 0, "Empty Box", 0, "Order in Chaos", 0, "Fog of War", 0, "Power", 0 , "The Tower", 0 , "Ad Lib", 0, "Classics", 0];
+let qualified = ["High Score", "Blindness", "Empty Box", "Order in Chaos", "Fog of War", "Power", "The Tower", "Ad Lib", "Classics"];
+const ACHIEVEMENT_QUALIFYING_SCORES = 
+["High Score", 0, 3000, 8000, 25000, 40000, 75000, 125000,
+"Blindness", 0, 1000, 3000, 8000, 15000, 30000, 50000,
+"Empty Box", 0, 1000, 3000, 8000, 15000, 30000, 50000,
+"Order in Chaos", 0, 1000, 3000, 8000, 15000, 30000, 50000,
+"Fog of War", 0, 1000, 3000, 8000, 15000, 30000, 50000,
+"Power", 0, 1000, 3000, 8000, 15000, 30000, 50000,
+"The Tower", 0, 500, 1500, 4000, 7000, 10000, 14880,
+"Ad Lib", 0, 1000, 3000, 8000, 15000, 30000, 50000,
+"Classics", 0, 1000, 3000, 8000, 15000, 30000, 50000];
 //move -1 = title screen
 //mode 0 = board
 //mode 1 = game over
 //move 2 = mod selection
 //mode 3 = achievements page 1
 //mode 4 = achievements page 2
+//mode 5 = achievements page 3
 let gameStats = ["lines", 0];
 let queue = ["Hold", "","holdArray", [], 1, "", 2, "", 3, "", 4, "", 5, "", 6, "" ];
 let currentBag = generateBag(BAG);
@@ -115,14 +128,27 @@ let spawnQueue = 0;
 const MAIN_THEME = new Audio("./SFX/music-standard.wav");
 MAIN_THEME.loop = true;
 MAIN_THEME.volume = 1; 
+const EX_THEME = new Audio("./SFX/music-speedrun.wav");
+EX_THEME.loop = true;
+EX_THEME.volume = 1; 
 const MENU_THEME = new Audio("./SFX/music-menu.wav");
 MENU_THEME.loop = true;
 MENU_THEME.volume = 1; 
 const SELECT = new Audio("./SFX/select.wav");
+const W1 = new Audio("./SFX/warning-1.wav");
+const W2 = new Audio("./SFX/warning-2.wav");
+const W3 = new Audio("./SFX/warning-3.wav");
+const W4 = new Audio("./SFX/warning-4.wav");
 
 let mods = ["No Next", "No Ghost Piece", "No Hold", "Gravity", "Total Mayhem"];
 let modTriggers = ["q", "w", "e", "r", "t"];
-
+function clearBoardTop(){
+    for(let i=0; i<4; i++){
+        for(let j=0; j<10; j++){
+            board[i][j]=0;
+        }
+    }
+}
 function generateBag(bag){
     if(gameData[gameData.indexOf("mods") + 1].indexOf("Total Mayhem") == -1){
         let rpt = bag.length
@@ -208,6 +234,7 @@ function drawHalfTile(cx, cy, color1, color2, angle){
 function spawnNextPiece(){
     drawPiece()
     clearLines()
+    console.log("Y:"+ pieceData[pieceData.indexOf("y") + 1])
 
     pieceData[pieceData.indexOf("piece") + 1] = queue[queue.indexOf(1)+1];
     if(pieceData[pieceData.indexOf("piece") + 1]!=""){ 
@@ -219,7 +246,7 @@ function spawnNextPiece(){
         
    
     pieceData[pieceData.indexOf("x") + 1] = 3;
-    pieceData[pieceData.indexOf("y") + 1] = 0;
+    pieceData[pieceData.indexOf("y") + 1] = 1;
     pieceData[pieceData.indexOf("oldx") + 1] = 3;
     pieceData[pieceData.indexOf("oldy") + 1] = 0;
     pieceData[pieceData.indexOf("movements") + 1] = [];
@@ -276,50 +303,6 @@ function drawPiece(){
     //draws new piece
 
 }
-// function updatePieceX(){
-//     let pieceSize = pieceData[pieceData.indexOf("pieceArray") + 1].length
-    
-//     for(let x=0; x<pieceSize; x++){
-//         for(let y=0; y<pieceSize; y++){
-//             if (pieceData[pieceData.indexOf("pieceArray") + 1][y][x]!=0){
-//                 board[pieceData[pieceData.indexOf("oldy") + 1]+y][pieceData[pieceData.indexOf("oldx") + 1]+x] =0;
-//             }
-//         }
-//     }
-//     //erases old piece
-//     pieceData[pieceData.indexOf("oldx") + 1] = pieceData[pieceData.indexOf("x") + 1]
-//     //updates piece information
-//     for(let x=0; x<pieceSize; x++){
-//         for(let y=0; y<pieceSize; y++){
-//             if (pieceData[pieceData.indexOf("pieceArray") + 1][y][x]!=0){
-//                 board[pieceData[pieceData.indexOf("y") + 1]+y][pieceData[pieceData.indexOf("x") + 1]+x] += 1;
-//             }
-//         }
-//     }
-//     //draws new piece
-// }
-// function updatePieceY(){
-//     let pieceSize = pieceData[pieceData.indexOf("pieceArray") + 1].length
-    
-//     for(let x=0; x<pieceSize; x++){
-//         for(let y=0; y<pieceSize; y++){
-//             if (pieceData[pieceData.indexOf("pieceArray") + 1][y][x]!=0){
-//                 board[pieceData[pieceData.indexOf("oldy") + 1]+y][pieceData[pieceData.indexOf("oldx") + 1]+x] =0;
-//             }
-//         }
-//     }
-//     //erases old piece
-//     pieceData[pieceData.indexOf("oldy") + 1] = pieceData[pieceData.indexOf("y") + 1]
-//     //updates piece information
-//     for(let x=0; x<pieceSize; x++){
-//         for(let y=0; y<pieceSize; y++){
-//             if (pieceData[pieceData.indexOf("pieceArray") + 1][y][x]!=0){
-//                 board[pieceData[pieceData.indexOf("y") + 1]+y][pieceData[pieceData.indexOf("x") + 1]+x] += 1;
-//             }
-//         }
-//     }
-//     //draws new piece
-// }
 function gravity(){
     
     let canMove = true;
@@ -355,7 +338,7 @@ function gravity(){
         pieceData[pieceData.indexOf("y") + 1] +=1
         pieceData[pieceData.indexOf("movements") + 1].push("g");
     }else{
-        spawnQueue+=1
+        spawnQueue=1
     }
 }
 function softDrop(){
@@ -395,6 +378,7 @@ function softDrop(){
 }
 function firmDrop(){
     let canMove = true;
+    let moved = false;
     while(canMove==true){
         let tempBoard = board.map(row => [...row]);
 
@@ -424,18 +408,22 @@ function firmDrop(){
         }
 
         if (canMove){
+            moved=true;
             pieceData[pieceData.indexOf("y") + 1] +=1
+            console.log("Y set to "+ pieceData[pieceData.indexOf("y") + 1])
             gameData[gameData.indexOf("score") + 1]+=2;
         }
     }
-    
+    if(moved==false){
+        console.log("Failed to drop")
+    }
     pieceData[pieceData.indexOf("movements") + 1].push("fd");
     
 }
 function hardDrop(){
     firmDrop();
     pieceData[pieceData.indexOf("movements") + 1].push("hd");
-    spawnQueue+=1
+    spawnQueue=1
 }
 function getLowestMovementPoint(){
     let canMove = true;
@@ -958,8 +946,9 @@ function clearLines(){
     }
     if (clearedLines>0){
         let lineClear = ""
-        let score = 100
-        let lastMove = pieceData[pieceData.indexOf("pieceArray") + 1].pop()
+        let score = 100 * gameData[gameData.indexOf("level") + 1]
+        let lastMove = pieceData[pieceData.indexOf("movements") + 1].pop()
+        //console.log(lastMove);
         if (lastMove == "rcw"||lastMove == "rccw"){
             if(pieceData[pieceData.indexOf("piece") + 1]!="O"){
                 lineClear += pieceData[pieceData.indexOf("piece") + 1]+"-Spin "
@@ -972,7 +961,7 @@ function clearLines(){
             }
         }
         if(clearedLines==1){
-            if(score==100){
+            if(lineClear==""){
                 gameData[gameData.indexOf("b2b") + 1] = 0;
                 gameStats[gameStats.indexOf("lines") + 1] +=1;
             }
@@ -981,7 +970,7 @@ function clearLines(){
             LC.volume = 1; 
             LC.play()
         }else if(clearedLines==2){
-            if(score==100){
+            if(lineClear==""){
                 gameData[gameData.indexOf("b2b") + 1] = 0;
                 gameStats[gameStats.indexOf("lines") + 1] +=2;
             }
@@ -991,7 +980,7 @@ function clearLines(){
             LC.volume = 1; 
             LC.play()
         }else if(clearedLines==3){
-            if(score==100){
+            if(lineClear==""){
                 gameData[gameData.indexOf("b2b") + 1] = 0;
                 gameStats[gameStats.indexOf("lines") + 1] +=3;
             }
@@ -1003,7 +992,7 @@ function clearLines(){
         }else if(clearedLines==4){
             gameData[gameData.indexOf("b2b") + 1] +=1
             gameStats[gameStats.indexOf("lines") + 1] +=4;
-            score*=8
+            score*=(8+gameData[gameData.indexOf("b2b") + 1])
             lineClear += "Tetris"
             const LCQ = new Audio("./SFX/lineclear-tetris.wav");
             LCQ.volume = 1; 
@@ -1013,9 +1002,9 @@ function clearLines(){
             gameStats[gameStats.indexOf("lines") + 1] +=5;
             score*=8
             lineClear += "PENTRIS"
-            const LCP = new Audio("./SFX/lineclear-tetris.wav");
-            LCP.volume = 1; 
-            LCP.play()
+            const LCQ = new Audio("./SFX/lineclear-tetris.wav");
+            LCQ.volume = 1; 
+            LCQ.play()
         }
         if (gameData[gameData.indexOf("combo") + 1] >0){
             score *= Math.pow(1.25, gameData[gameData.indexOf("combo") + 1])
@@ -1031,24 +1020,28 @@ function clearLines(){
         let Sum = 0;
         for (let r=0; r<24; r++){
             for(let c=0; c<10; c++){
-                Sum+=board[r, c];
+                Sum+=board[r][c];
             }
         }
         if (Sum==0){
             score+=10000;
             lineClear += " Perfect Clear"
-            const LC = new Audio("./SFX/lineclear-pc.wav");
-            LC.volume = 1; 
-            LC.play()
+            const LCP = new Audio("./SFX/lineclear-pc.wav");
+            LCP.volume = 1; 
+            LCP.play()
         }
+        //console.log(Sum)
         //console.log(lineClear);
-        gameData[gameData.indexOf("score") + 1] += score
         //console.log(score);
+        gameData[gameData.indexOf("score") + 1] += score
+        if (gameData[gameData.indexOf("b2b") + 1]>0){
+            lineClear += " b2b x"+gameData[gameData.indexOf("b2b") + 1]  +""
+        }
         gameData[gameData.indexOf("actionText") + 1] = lineClear;
         gameData[gameData.indexOf("combo") + 1] +=1;
+
         //console.log("combo set to "+gameData[gameData.indexOf("combo") + 1]+"")
     }else{
-        gameData[gameData.indexOf("b2b") + 1] = 0;
         gameData[gameData.indexOf("combo") + 1] = 0;
         //console.log("combo set to "+gameData[gameData.indexOf("combo") + 1]+"")
     }
@@ -1080,8 +1073,9 @@ function calculateTilt(){
 function drawUI(){
     ctx.fillStyle = "#2F1254";
     ctx.fillRect(768, 0, 256, 1024);
+    //ctx.fillRect(0, 0, 1024, 60);
     ctx.fillStyle = "#FF9900";
-    ctx.font = "30px Arial";
+    ctx.font = "20px Arial";
     ctx.textBaseline = "middle";
     ctx.fillText(gameData[gameData.indexOf("actionText") + 1],234,50);
     //general text and info
@@ -1151,10 +1145,18 @@ function drawMenuScreen(){
     
 }
 function endGame(reason){
+
+    
     const GAMEOVER = new Audio("./SFX/gameover.wav");
     GAMEOVER.play()
+    W2.pause()
+    W4.pause()
     let go = new Image();
-    go.src = "./GFX/gameover.png"
+    if(reason=="Topped Out"){
+        go.src = "./GFX/gameover-topout.png"
+    }else{
+        go.src = "./GFX/gameover-tipover.png"
+    }
     go.onload = function(){ctx.drawImage(go, 0, 0);}
     gameData[gameData.indexOf("mode") + 1] = 1
     clearInterval(timer1);
@@ -1162,8 +1164,10 @@ function endGame(reason){
     clearInterval(timer3)
     console.log(reason)
     MAIN_THEME.pause()
-
+    EX_THEME.pause()
+    gameData[gameData.indexOf("actionText") + 1] = ""
     setTimeout(drawUI, 250)
+    setTimeout(showNewAchievements, 500)
 
 
 }
@@ -1181,10 +1185,7 @@ function playWarnings(){
         }
 
     }
-    const W1 = new Audio("./SFX/warning-1.wav");
-    const W2 = new Audio("./SFX/warning-2.wav");
-    const W3 = new Audio("./SFX/warning-3.wav");
-    const W4 = new Audio("./SFX/warning-4.wav");
+
     if (Math.abs(gameData[gameData.indexOf("tilt") + 1]) >=1/2*TILE_SIZE){
         endGame("Tipped Over")
     }
@@ -1206,22 +1207,23 @@ function playWarnings(){
     }
 }
 function everyFourSeconds(){
-    MAIN_THEME.play();
-    //console.log(gameData[gameData.indexOf("level") + 1])
-    //console.log(Math.floor(gameStats[gameStats.indexOf("lines") + 1]/10)+1)
+
     gameData[gameData.indexOf("actionText") + 1] = ""
     if ( gameData[gameData.indexOf("level") + 1] != Math.floor(gameStats[gameStats.indexOf("lines") + 1]/10)+1){
-
+        //console.log(gameData[gameData.indexOf("level") + 1])
+        //console.log(Math.floor(gameStats[gameStats.indexOf("lines") + 1]/10)+1)
         gameData[gameData.indexOf("level") + 1] = Math.floor(gameStats[gameStats.indexOf("lines") + 1]/10)+1
         clearInterval(timer2)
-        console.log(gameData[gameData.indexOf("level") + 1])
+        //console.log(gameData[gameData.indexOf("level") + 1])
         
         if(gameData[gameData.indexOf("mods") + 1].indexOf("Gravity") == -1){
-            timer2 = setInterval(gravity, 1000/Math.log(gameData[gameData.indexOf("level") + 1]+1))
-            console.log(1000/Math.log(gameData[gameData.indexOf("level") + 1]+1))
+            //timer2 = setInterval(gravity, 1000/(Math.log(gameData[gameData.indexOf("level") + 9]+1)/Math.log(1.2)))
+            timer2 = setInterval(gravity, 2000/gameData[gameData.indexOf("level") + 1])
+            //console.log("Gravity:"+ 1000/Math.log(gameData[gameData.indexOf("level") + 9]+1))
+            console.log("Gravity:" + 2000/gameData[gameData.indexOf("level") + 1])
         }else{
             timer2 = setInterval(gravity, 1000/gameData[gameData.indexOf("level") + 1])
-            console.log(1000/gameData[gameData.indexOf("level") + 1])
+            //console.log(1000/gameData[gameData.indexOf("level") + 1])
         }
         
         gameData[gameData.indexOf("actionText") + 1] = "Level Up!"
@@ -1240,6 +1242,179 @@ function writeSubtitles(text){
     ctx.font = "50px Arial";
     ctx.textBaseline = "middle";
     ctx.fillText(text,0,743);
+}
+function removeFromArray(arr, item){
+    let index = arr.indexOf(item)
+    if(index!=-1){
+        arr.splice(index, 1);
+    }
+}
+function start(mods){
+    qualified = ["High Score", "Blindness", "Empty Box", "Order in Chaos", "Fog of War", "Power", "The Tower", "Ad Lib", "Classics"];
+    if (mods.indexOf("No Next")==-1){
+        removeFromArray(qualified, "The Tower");
+        removeFromArray(qualified, "Ad Lib");
+        removeFromArray(qualified, "Fog of War");
+    }
+    if (mods.indexOf("No Ghost Piece")==-1){
+        removeFromArray(qualified, "The Tower");
+        removeFromArray(qualified, "Classics");
+        removeFromArray(qualified, "Blindness");
+    }
+    if (mods.indexOf("No Hold")==-1){
+        removeFromArray(qualified, "The Tower");
+        removeFromArray(qualified, "Ad Lib");
+        removeFromArray(qualified, "Classics");
+        removeFromArray(qualified, "Empty Box");
+    }
+    if (mods.indexOf("Gravity")==-1){
+        removeFromArray(qualified, "The Tower");
+        removeFromArray(qualified, "Power");
+    }
+    if (mods.indexOf("Total Mayhem")==-1){
+        removeFromArray(qualified, "The Tower");
+        removeFromArray(qualified, "Order in Chaos");
+    }
+    if(gameData[gameData.indexOf("mods") + 1].length == 5){
+        EX_THEME.play();
+    }else{
+        MAIN_THEME.play();
+    }
+    MENU_THEME.pause();
+    
+    let bg = new Image();
+    bg.src = "./GFX/bg.png"
+    bg.onload = function(){
+        ctx.drawImage(bg, 0, 0);
+    }
+    board = 
+    [
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [1,1,1,1,1,1,1,1,1,1]
+    ];
+    currentBag = generateBag(BAG);
+    queue = ["Hold", "","holdArray", [], 1, "", 2, "", 3, "", 4, "", 5, "", 6, "" ];
+    spawnQueue=7
+    gameStats = ["lines", 0];
+    pieceData = ["piece","","pieceArray", [], "x", 0, "y", 0, "oldx", 0, "oldy", 0, "movements", [], "rotation", 0];
+    gameData = ["level", 1, "holdLock", false, "score", 0, "b2b", 0, "combo", 0, "actionText","", "tilt", 0 , "mode", 0, "tiltSpeed", 0
+    ,"mods", mods
+    ];
+    timer1 = setInterval( function() { drawBoard(234,0,gameData[gameData.indexOf("tilt") + 1]); }, 10 );
+    timer2 = setInterval(gravity, 2000);
+    timer3 = setInterval(everyFourSeconds, 4000);
+}
+function showNewAchievements(){
+    let score = gameData[gameData.indexOf("score") + 1];
+    let pbs = 0;
+    let ach = 0;
+    for(let i=0; i<bestGames.length/2; i++){
+        console.log()
+        if(qualified.indexOf(bestGames[2*i])!=-1&&score>bestGames[2*i+1]){
+            pbs+=1
+            let index = ACHIEVEMENT_QUALIFYING_SCORES.indexOf(bestGames[2*i])
+            for(let j=1; j<=7; j++){
+                let bgi = bestGames[2*i+1]>ACHIEVEMENT_QUALIFYING_SCORES[index+j]
+                let sci = score>ACHIEVEMENT_QUALIFYING_SCORES[index+j]
+                if(!bgi&&sci){
+                    
+                    ach+=1;
+                    break;
+                }
+            }
+            bestGames[2*i+1]=score;
+        }
+    }
+    if (pbs>0){
+        const pb = new Audio("./SFX/personal-best.wav");
+        pb.play();
+        console.log(""+pbs+" new pbs!")
+        drawPBStage1();
+        if(ach>0){
+            writeSubtitles(""+ach+" new achievements!")
+            console.log(""+ach+" new achievements!")
+        }
+        console.log(bestGames)
+    }
+}
+function drawPBStage1(){
+    ctx.fillStyle = "#2F1254";
+    ctx.fillRect(0, 314, 1024, 100);
+    setTimeout(drawPBStage2, 500)
+}
+function drawPBStage2(){
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "100px Arial";
+    ctx.textBaseline = "middle";
+    ctx.fillText("PERSONAL BEST!",100,364);
+    setTimeout(drawPBStage3, 500)
+}
+function drawPBStage3(){
+    ctx.fillStyle = "#00FFFF";
+    ctx.font = "100px Arial";
+    ctx.textBaseline = "middle";
+    ctx.fillText("PERSONAL BEST!",100,370);
+}
+function drawAchievementScreen(){
+    console.log(gameData[gameData.indexOf("mode") + 1]-2)
+    let achbg = new Image();
+    achbg.src = "./GFX/achievements-"+  (gameData[gameData.indexOf("mode") + 1]-2)  +".png"
+    achbg.onload = function(){
+        ctx.drawImage(achbg, 0, 0);
+    }
+    setTimeout( function() { drawAchievementIcons(gameData[gameData.indexOf("mode") + 1]-2); }, 250 );
+}
+function drawAchievementIcons(num){
+    num-=1
+    for(let i=3*num; i<3*num+3; i++){
+        let index = 8*i
+        let achQ = 0;
+        let maxout = true;
+        for(let j=1; j<=7; j++){
+            //console.log(bestGames[2*i+1])
+            //console.log(ACHIEVEMENT_QUALIFYING_SCORES[index+j])
+            if (bestGames[2*i+1]<ACHIEVEMENT_QUALIFYING_SCORES[index+j]){
+                maxout = false;
+                achQ = j-1;
+                break;
+            }
+        }
+        if(maxout==true){
+            achQ=7
+        }
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "50px Arial";
+        ctx.textBaseline = "middle";
+        ctx.fillText(bestGames[2*i+1],600,151+162*(i%3));
+        let achicon = new Image();
+        achicon.src = "./GFX/achievement-"+  achQ  +".png"
+        achicon.onload = function(){
+            ctx.drawImage(achicon, 810, 77+162*(i%3));
+        }
+    }
 }
 /*THIS IS ALL CODE THAT IS PART OF THE GAME*/
 window.addEventListener("keydown", function (event) {
@@ -1323,7 +1498,7 @@ window.addEventListener("keydown", function (event) {
         break;
 
     case "Escape": 
-    if (!commandQueued&&gm==1){
+    if (!commandQueued&&gm!=0){
         commandQueued = true;
         drawTitleScreen();
         SELECT.play()
@@ -1339,10 +1514,22 @@ window.addEventListener("keydown", function (event) {
     }
     break;
     case "a": 
-    if (!commandQueued&&gm==1){
+    if (!commandQueued&&gm==-1){
         commandQueued = true;
-        //drawTitleScreen();
-        //achievements, add tmrw
+        gameData[gameData.indexOf("mode") + 1]=3
+        drawAchievementScreen()
+        SELECT.play()
+        commandQueued = false;
+    }else if (!commandQueued&&gm<5){
+        commandQueued = true;
+        gameData[gameData.indexOf("mode") + 1]+=1
+        drawAchievementScreen()
+        SELECT.play()
+        commandQueued = false;
+    }else{
+        commandQueued = true;
+        gameData[gameData.indexOf("mode") + 1]=-1
+        drawTitleScreen()
         SELECT.play()
         commandQueued = false;
     }
@@ -1364,9 +1551,9 @@ window.addEventListener("keydown", function (event) {
             }else{
                 gameData[gameData.indexOf("mods") + 1].splice(gameData[gameData.indexOf("mods") + 1].indexOf("No Next"), 1)
                 ctx.fillStyle = "#2F1254";
-                ctx.fillRect(0, 156, 77, 40); 
+                ctx.fillRect(0, 156, 77, 40);
             }
-            SELECT.play()
+            
             commandQueued = false;
         }
         break;
@@ -1386,7 +1573,6 @@ window.addEventListener("keydown", function (event) {
                 gameData[gameData.indexOf("mods") + 1].splice(gameData[gameData.indexOf("mods") + 1].indexOf("No Ghost Piece"), 1)
                 ctx.fillStyle = "#2F1254";
                 ctx.fillRect(0, 201, 77, 40); 
-                SELECT.play()
             }
             
             commandQueued = false;
@@ -1408,7 +1594,6 @@ window.addEventListener("keydown", function (event) {
                 gameData[gameData.indexOf("mods") + 1].splice(gameData[gameData.indexOf("mods") + 1].indexOf("No Hold"), 1)
                 ctx.fillStyle = "#2F1254";
                 ctx.fillRect(0, 246, 77, 40); 
-                SELECT.play()
             }
 
             commandQueued = false;
@@ -1430,7 +1615,6 @@ window.addEventListener("keydown", function (event) {
                 gameData[gameData.indexOf("mods") + 1].splice(gameData[gameData.indexOf("mods") + 1].indexOf("Gravity"), 1)
                 ctx.fillStyle = "#2F1254";
                 ctx.fillRect(0, 291, 77, 40); 
-                SELECT.play()
             }
 
             commandQueued = false;
@@ -1452,7 +1636,6 @@ window.addEventListener("keydown", function (event) {
                 gameData[gameData.indexOf("mods") + 1].splice(gameData[gameData.indexOf("mods") + 1].indexOf("Total Mayhem"), 1)
                 ctx.fillStyle = "#2F1254";
                 ctx.fillRect(0, 336, 77, 40); 
-                SELECT.play()
             }
             commandQueued = false;
         }
@@ -1473,54 +1656,7 @@ window.addEventListener("keydown", function (event) {
     event.preventDefault();
   }, true);
 drawTitleScreen()
-function start(mods){
-    MENU_THEME.pause();
-    MAIN_THEME.play();
-    let bg = new Image();
-    bg.src = "./GFX/bg.png"
-    bg.onload = function(){
-        ctx.drawImage(bg, 0, 0);
-    }
-    board = 
-    [
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [1,1,1,1,1,1,1,1,1,1]
-    ];
-    currentBag = generateBag(BAG);
-    queue = ["Hold", "","holdArray", [], 1, "", 2, "", 3, "", 4, "", 5, "", 6, "" ];
-    spawnQueue=7
-    gameStats = ["lines", 0];
-    pieceData = ["piece","","pieceArray", [], "x", 0, "y", 0, "oldx", 0, "oldy", 0, "movements", [], "rotation", 0];
-    gameData = ["level", 1, "holdLock", false, "score", 0, "b2b", 0, "combo", 0, "actionText","", "tilt", 0 , "mode", 0, "tiltSpeed", 0
-    ,"mods", mods
-    ];
-    timer1 = setInterval( function() { drawBoard(234,0,gameData[gameData.indexOf("tilt") + 1]); }, 10 );
-    timer2 = setInterval(gravity, 1000);
-    timer3 = setInterval(everyFourSeconds, 4000);
-}
+
 
 
 
