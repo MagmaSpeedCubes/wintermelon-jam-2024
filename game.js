@@ -99,7 +99,15 @@ let board =
     [1,1,1,1,1,1,1,1,1,1]
     ];
 let pieceData = ["piece","","pieceArray", [], "x", 0, "y", 0, "oldx", 0, "oldy", 0, "movements", [], "rotation", 0];
-let gameData = ["level", 1, "holdLock", false, "score", 0, "b2b", 0, "combo", 0, "actionText","", "tilt", 0 , "mode", 0, "tiltSpeed", 0];
+let gameData = ["level", 1, "holdLock", false, "score", 0, "b2b", 0, "combo", 0, "actionText","", "tilt", 0 , "mode", 0, "tiltSpeed", 0
+    ,"mods", []
+];
+//move -1 = title screen
+//mode 0 = board
+//mode 1 = game over
+//move 2 = mod selection
+//mode 3 = achievements page 1
+//mode 4 = achievements page 2
 let gameStats = ["lines", 0];
 let queue = ["Hold", "","holdArray", [], 1, "", 2, "", 3, "", 4, "", 5, "", 6, "" ];
 let currentBag = generateBag(BAG);
@@ -107,24 +115,37 @@ let spawnQueue = 0;
 const MAIN_THEME = new Audio("./SFX/music-standard.wav");
 MAIN_THEME.loop = true;
 MAIN_THEME.volume = 1; 
+const MENU_THEME = new Audio("./SFX/music-menu.wav");
+MENU_THEME.loop = true;
+MENU_THEME.volume = 1; 
+const SELECT = new Audio("./SFX/select.wav");
 
-let mods = ["No Ghost Piece", "No Hold", "Gravity", "No Next Queue", "Total Mayhem", "Pentominoes"];
-let modFlavorTexts = ["Ghost piece is disabled", "Holding is disabled", "Gravity increases sharply by level", "Cannoy see your next pieces", "Fully random piece generation", "Occasionally recive pentomino pieces"]
-let modTriggers = ["q", "w", "e", "r", "t", "y"];
-let bg = new Image();
-bg.src = "./GFX/bg.png"
+let mods = ["No Next", "No Ghost Piece", "No Hold", "Gravity", "Total Mayhem"];
+let modTriggers = ["q", "w", "e", "r", "t"];
 
 function generateBag(bag){
-    let rpt = bag.length
-    let localBag = bag;
-    let randomBag = [];
-    for(let i=0; i<rpt; i++){
-        let randomPiece = Math.floor(Math.random() * localBag.length);
-        randomBag.push(localBag[randomPiece]);
-        localBag.splice(randomPiece, 1);
+    if(gameData[gameData.indexOf("mods") + 1].indexOf("Total Mayhem") == -1){
+        let rpt = bag.length
+        let localBag = bag;
+        let randomBag = [];
+        for(let i=0; i<rpt; i++){
+            let randomPiece = Math.floor(Math.random() * localBag.length);
+            randomBag.push(localBag[randomPiece]);
+            localBag.splice(randomPiece, 1);
+        }
+        BAG = ["I", "J", "L", "O", "S", "T", "Z"];
+        return randomBag;
+    }else{
+        let rpt = bag.length
+        let localBag = bag;
+        let randomBag = [];
+        for(let i=0; i<rpt; i++){
+            let randomPiece = Math.floor(Math.random() * localBag.length);
+            randomBag.push(localBag[randomPiece]);
+        }
+        BAG = ["I", "J", "L", "O", "S", "T", "Z"];
+        return randomBag;
     }
-    BAG = ["I", "J", "L", "O", "S", "T", "Z"];
-    return randomBag;
 }
 function drawBoard(cx, cy, dpl){
     // updatePieceX()
@@ -134,9 +155,7 @@ function drawBoard(cx, cy, dpl){
         spawnQueue-=1
         spawnNextPiece();
     }
-    bg.onload = function(){
-        ctx.drawImage(bg, 0, 0);
-    }
+
     for(let w=0; w<10; w++){
         for(let h=0; h<4; h++){
             if (board[h][w]!=0){
@@ -147,9 +166,6 @@ function drawBoard(cx, cy, dpl){
                 let color1 = "#2F1254"
                 let color2 = "#2F1254"
                 drawTile(cx+w*TILE_SIZE, cy+h*TILE_SIZE+dpl*(w-4.5), color1, color2);
-            }
-            if (board[h][w]>1){
-                endGame("Topped Out")
             }
         }
         for(let h=4; h<24; h++){
@@ -162,9 +178,6 @@ function drawBoard(cx, cy, dpl){
                 let color2 = "#000000"
                 drawTile(cx+w*TILE_SIZE, cy+h*TILE_SIZE+dpl*(w-4.5), color1, color2);
             }
-            if (board[h][w]>1){
-                endGame("Topped Out");
-            }
         }
         let color1 = "#2F1254"
         let color2 = "#2F1254"
@@ -173,8 +186,11 @@ function drawBoard(cx, cy, dpl){
         }
         
     }
-    drawGhostPiece(cx, cy, dpl)
+    if(gameData[gameData.indexOf("mods") + 1].indexOf("No Ghost Piece")==-1){
+        drawGhostPiece(cx, cy, dpl)
+    }
     drawUI()
+
     
 }
 function drawTile(cx, cy, color1, color2, angle){
@@ -221,6 +237,18 @@ function spawnNextPiece(){
     if (currentBag.length==0){
         currentBag = generateBag(BAG);
     }
+    let pieceSize = pieceData[pieceData.indexOf("pieceArray") + 1].length
+    
+    for(let x=0; x<pieceSize; x++){
+        for(let y=0; y<pieceSize; y++){
+            if (pieceData[pieceData.indexOf("pieceArray") + 1][y][x]!=0){
+                if(board[pieceData[pieceData.indexOf("oldy") + 1]+y][pieceData[pieceData.indexOf("oldx") + 1]+x] !=0){
+                    endGame("Topped Out")
+                }
+            }
+        }
+    }
+
     //updates next pieces
     
 }
@@ -1085,26 +1113,59 @@ function drawUI(){
     
 
     cy+=60
-    for(let i=0; i<6; i++){
-        cy+=60
-        pieceSize = PIECES[PIECES.indexOf(queue[queue.indexOf(i+1) + 1])+1].length
-        for(let x=0; x<pieceSize; x++){
-            for(let y=0; y<pieceSize; y++){
-                if (PIECES[PIECES.indexOf(queue[queue.indexOf(i+1) + 1])+1][y][x]!=0){
-                    drawHalfTile(cx+x*TILE_SIZE/2, cy+y*TILE_SIZE/2, "#999999", "#FFFFFF")
-    
+    if(gameData[gameData.indexOf("mods") + 1].indexOf("No Next") == -1){
+        for(let i=0; i<6; i++){
+            cy+=60
+            pieceSize = PIECES[PIECES.indexOf(queue[queue.indexOf(i+1) + 1])+1].length
+            for(let x=0; x<pieceSize; x++){
+                for(let y=0; y<pieceSize; y++){
+                    if (PIECES[PIECES.indexOf(queue[queue.indexOf(i+1) + 1])+1][y][x]!=0){
+                        drawHalfTile(cx+x*TILE_SIZE/2, cy+y*TILE_SIZE/2, "#999999", "#FFFFFF")
+        
+                    }
                 }
             }
         }
     }
+
+    
+}
+function drawTitleScreen(){
+    MENU_THEME.play()
+    gameData[gameData.indexOf("mode") + 1] = -1
+    let ts = new Image();
+    ts.src = "./GFX/title.png"
+    ts.onload = function(){
+        ctx.drawImage(ts, 0, 0);
+    }
+}
+function drawMenuScreen(){
+    MENU_THEME.play()
+    gameData[gameData.indexOf("mode") + 1] = 2
+    let ms = new Image();
+    ms.src = "./GFX/menu.png"
+    ms.onload = function(){
+        ctx.drawImage(ms, 0, 0);
+    }
+    gameData[gameData.indexOf("mods") + 1] = []
     
 }
 function endGame(reason){
+    const GAMEOVER = new Audio("./SFX/gameover.wav");
+    GAMEOVER.play()
+    let go = new Image();
+    go.src = "./GFX/gameover.png"
+    go.onload = function(){ctx.drawImage(go, 0, 0);}
+    gameData[gameData.indexOf("mode") + 1] = 1
     clearInterval(timer1);
     clearInterval(timer2);
     clearInterval(timer3)
     console.log(reason)
     MAIN_THEME.pause()
+
+    setTimeout(drawUI, 250)
+
+
 }
 function playWarnings(){
     let highestOccupied = 0;
@@ -1145,6 +1206,7 @@ function playWarnings(){
     }
 }
 function everyFourSeconds(){
+    MAIN_THEME.play();
     //console.log(gameData[gameData.indexOf("level") + 1])
     //console.log(Math.floor(gameStats[gameStats.indexOf("lines") + 1]/10)+1)
     gameData[gameData.indexOf("actionText") + 1] = ""
@@ -1153,98 +1215,314 @@ function everyFourSeconds(){
         gameData[gameData.indexOf("level") + 1] = Math.floor(gameStats[gameStats.indexOf("lines") + 1]/10)+1
         clearInterval(timer2)
         console.log(gameData[gameData.indexOf("level") + 1])
-        console.log(1000/Math.log(gameData[gameData.indexOf("level") + 1]+1))
-        timer2 = setInterval(gravity, 1000/Math.log(gameData[gameData.indexOf("level") + 1]+1))
+        
+        if(gameData[gameData.indexOf("mods") + 1].indexOf("Gravity") == -1){
+            timer2 = setInterval(gravity, 1000/Math.log(gameData[gameData.indexOf("level") + 1]+1))
+            console.log(1000/Math.log(gameData[gameData.indexOf("level") + 1]+1))
+        }else{
+            timer2 = setInterval(gravity, 1000/gameData[gameData.indexOf("level") + 1])
+            console.log(1000/gameData[gameData.indexOf("level") + 1])
+        }
+        
         gameData[gameData.indexOf("actionText") + 1] = "Level Up!"
         const LU = new Audio("./SFX/levelup.wav");
         LU.play()
     }
     
-    MAIN_THEME.play();
+    
     playWarnings();
 
 }
-
+function writeSubtitles(text){
+    ctx.fillStyle = "#2F1254";
+    ctx.fillRect(0, 718, 1024, 50);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "50px Arial";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text,0,743);
+}
 /*THIS IS ALL CODE THAT IS PART OF THE GAME*/
-function start(){
+window.addEventListener("keydown", function (event) {
+    let gm = gameData[gameData.indexOf("mode") + 1]
+    switch (event.key) {
+    case "ArrowDown":
+        if (!commandQueued&&gm==0){
+            commandQueued = true;
+            softDrop();
+            commandQueued = false;
+        }
+
+        break;
+    case "Shift":
+        if (!commandQueued&&gm==0){
+            commandQueued = true;
+            firmDrop();
+            commandQueued = false;
+        }
         
-    spawnQueue+=7
-    timer1 = setInterval( function() { drawBoard(234,0,gameData[gameData.indexOf("tilt") + 1]); }, 10 );
-    timer2 = setInterval(gravity, 1000);
-    timer3 = setInterval(everyFourSeconds, 4000);
-    window.addEventListener("keydown", function (event) {
-  
-        switch (event.key) {
-        case "ArrowDown":
-            if (!commandQueued){
-                commandQueued = true;
-                softDrop();
-                commandQueued = false;
-            }
-    
-            break;
-        case "Shift":
-            if (!commandQueued){
-                commandQueued = true;
-                firmDrop();
-                commandQueued = false;
-            }
-            
-            break;
-        case "ArrowUp":
-            if (!commandQueued){
-                commandQueued = true;
-                rotatePieceCW();
-                commandQueued = false;
-            }
-            
-            break;
-        case "ArrowLeft":
-            if (!commandQueued){
-                commandQueued = true;
-                movePieceLeft();
-                commandQueued = false;
-            }
-            
-            break;
-        case "ArrowRight":
-            if (!commandQueued){
-                commandQueued = true;
-                movePieceRight();
-                commandQueued = false;
-            }
-            
-            break;
-        case "c":
-            if (!commandQueued){
+        break;
+    case "ArrowUp":
+        if (!commandQueued&&gm==0){
+            commandQueued = true;
+            rotatePieceCW();
+            commandQueued = false;
+        }
+        
+        break;
+    case "ArrowLeft":
+        if (!commandQueued&&gm==0){
+            commandQueued = true;
+            movePieceLeft();
+            commandQueued = false;
+        }
+        
+        break;
+    case "ArrowRight":
+        if (!commandQueued&&gm==0){
+            commandQueued = true;
+            movePieceRight();
+            commandQueued = false;
+        }
+        
+        break;
+    case "c":
+        if (!commandQueued&&gm==0){
+            if (gameData[gameData.indexOf("mods") + 1].indexOf("No Hold") == -1){
                 commandQueued = true;
                 holdPiece();
                 commandQueued = false;
             }
-            
-            break;
-        case " ":
-            if (!commandQueued){
-                commandQueued = true;
-                hardDrop();    
-                commandQueued = false;
-            }
-            
-            break;
-        case "z": 
-        if (!commandQueued){
+        }
+        
+        break;
+    case " ":
+        if (!commandQueued&&gm==0){
             commandQueued = true;
-            rotatePieceCCW();
+            hardDrop();    
             commandQueued = false;
         }
-            
-            break;}
-      
-        event.preventDefault();
-      }, true);
+        
+        break;
+    case "z": 
+    if (!commandQueued&&gm==0){
+        commandQueued = true;
+        rotatePieceCCW();
+        commandQueued = false;
+    }
+        
+        break;
+    case "Enter": 
+    if (!commandQueued){
+        if(gm==1||gm==2){
+            commandQueued = true;
+            start(gameData[gameData.indexOf("mods") + 1]);
+            SELECT.play()
+            commandQueued = false;
+        }
+    }
+        break;
 
+    case "Escape": 
+    if (!commandQueued&&gm==1){
+        commandQueued = true;
+        drawTitleScreen();
+        SELECT.play()
+        commandQueued = false;
+    }
+        break;
+    case "p": 
+    if (!commandQueued&&gm==-1){
+        commandQueued = true;
+        drawMenuScreen();
+        SELECT.play()
+        commandQueued = false;
+    }
+    break;
+    case "a": 
+    if (!commandQueued&&gm==1){
+        commandQueued = true;
+        //drawTitleScreen();
+        //achievements, add tmrw
+        SELECT.play()
+        commandQueued = false;
+    }
+        break;
+
+
+
+
+        case "q": 
+        if (!commandQueued&&gm==2){
+            commandQueued = true;
+            if(gameData[gameData.indexOf("mods") + 1].indexOf("No Next")==-1){
+                gameData[gameData.indexOf("mods") + 1].push("No Next")
+                ctx.fillStyle = "#D0EDAB";
+                ctx.fillRect(0, 156, 77, 40);  
+                const NO_NEXT = new Audio("./SFX/mod-nonext.wav");
+                NO_NEXT.play()
+                writeSubtitles("Next piece queue is disabled");
+            }else{
+                gameData[gameData.indexOf("mods") + 1].splice(gameData[gameData.indexOf("mods") + 1].indexOf("No Next"), 1)
+                ctx.fillStyle = "#2F1254";
+                ctx.fillRect(0, 156, 77, 40); 
+            }
+            SELECT.play()
+            commandQueued = false;
+        }
+        break;
+
+
+        case "w": 
+        if (!commandQueued&&gm==2){
+            commandQueued = true;
+            if(gameData[gameData.indexOf("mods") + 1].indexOf("No Ghost Piece")==-1){
+                gameData[gameData.indexOf("mods") + 1].push("No Ghost Piece")
+                ctx.fillStyle = "#D0EDAB";
+                ctx.fillRect(0, 201, 77, 40);  
+                const NO_GHOST = new Audio("./SFX/mod-noghost.wav");
+                NO_GHOST.play()
+                writeSubtitles("Ghost piece is disabled");
+            }else{
+                gameData[gameData.indexOf("mods") + 1].splice(gameData[gameData.indexOf("mods") + 1].indexOf("No Ghost Piece"), 1)
+                ctx.fillStyle = "#2F1254";
+                ctx.fillRect(0, 201, 77, 40); 
+                SELECT.play()
+            }
+            
+            commandQueued = false;
+        }
+        break;
+
+
+        case "e": 
+        if (!commandQueued&&gm==2){
+            commandQueued = true;
+            if(gameData[gameData.indexOf("mods") + 1].indexOf("No Hold")==-1){
+                gameData[gameData.indexOf("mods") + 1].push("No Hold")
+                ctx.fillStyle = "#D0EDAB";
+                ctx.fillRect(0, 246, 77, 40);  
+                const NO_HOLD = new Audio("./SFX/mod-nohold.wav");
+                NO_HOLD.play()
+                writeSubtitles("Holding is disabled");
+            }else{
+                gameData[gameData.indexOf("mods") + 1].splice(gameData[gameData.indexOf("mods") + 1].indexOf("No Hold"), 1)
+                ctx.fillStyle = "#2F1254";
+                ctx.fillRect(0, 246, 77, 40); 
+                SELECT.play()
+            }
+
+            commandQueued = false;
+        }
+        break;
+
+
+        case "r": 
+        if (!commandQueued&&gm==2){
+            commandQueued = true;
+            if(gameData[gameData.indexOf("mods") + 1].indexOf("Gravity")==-1){
+                gameData[gameData.indexOf("mods") + 1].push("Gravity")
+                ctx.fillStyle = "#D0EDAB";
+                ctx.fillRect(0, 291, 77, 40);  
+                const GRAVITY = new Audio("./SFX/mod-gravity.wav");
+                GRAVITY.play()
+                writeSubtitles("Gravity scales up harshly");
+            }else{
+                gameData[gameData.indexOf("mods") + 1].splice(gameData[gameData.indexOf("mods") + 1].indexOf("Gravity"), 1)
+                ctx.fillStyle = "#2F1254";
+                ctx.fillRect(0, 291, 77, 40); 
+                SELECT.play()
+            }
+
+            commandQueued = false;
+        }
+        break;
+
+
+        case "t": 
+        if (!commandQueued&&gm==2){
+            commandQueued = true;
+            if(gameData[gameData.indexOf("mods") + 1].indexOf("Total Mayhem")==-1){
+                gameData[gameData.indexOf("mods") + 1].push("Total Mayhem")
+                ctx.fillStyle = "#D0EDAB";
+                ctx.fillRect(0, 336, 77, 40);  
+                const MAYHEM = new Audio("./SFX/mod-mayhem.wav");
+                MAYHEM.play()
+                writeSubtitles("Piece generation is completely random");
+            }else{
+                gameData[gameData.indexOf("mods") + 1].splice(gameData[gameData.indexOf("mods") + 1].indexOf("Total Mayhem"), 1)
+                ctx.fillStyle = "#2F1254";
+                ctx.fillRect(0, 336, 77, 40); 
+                SELECT.play()
+            }
+            commandQueued = false;
+        }
+        break;
+
+
+        
+
+        
+
+            
+
+        
+    }
+
+
+  
+    event.preventDefault();
+  }, true);
+drawTitleScreen()
+function start(mods){
+    MENU_THEME.pause();
+    MAIN_THEME.play();
+    let bg = new Image();
+    bg.src = "./GFX/bg.png"
+    bg.onload = function(){
+        ctx.drawImage(bg, 0, 0);
+    }
+    board = 
+    [
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [1,1,1,1,1,1,1,1,1,1]
+    ];
+    currentBag = generateBag(BAG);
+    queue = ["Hold", "","holdArray", [], 1, "", 2, "", 3, "", 4, "", 5, "", 6, "" ];
+    spawnQueue=7
+    gameStats = ["lines", 0];
+    pieceData = ["piece","","pieceArray", [], "x", 0, "y", 0, "oldx", 0, "oldy", 0, "movements", [], "rotation", 0];
+    gameData = ["level", 1, "holdLock", false, "score", 0, "b2b", 0, "combo", 0, "actionText","", "tilt", 0 , "mode", 0, "tiltSpeed", 0
+    ,"mods", mods
+    ];
+    timer1 = setInterval( function() { drawBoard(234,0,gameData[gameData.indexOf("tilt") + 1]); }, 10 );
+    timer2 = setInterval(gravity, 1000);
+    timer3 = setInterval(everyFourSeconds, 4000);
 }
-start(0)
+
+
 
 
 
